@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jörmungandr</title>
+<meta name="description" content="A particle accelerator the size of the Earth, worked out with real physics.">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+<style>
+  :root { --abyss: #05222b; --deep: #0a3340; --foam: #e4f2ec; --mist: #8db0ab; --gold: #f4c95d; --coral: #ff7a59; --line: rgba(228, 242, 236, .16); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--abyss); color: var(--foam); font: 1.05rem/1.6 Archivo, system-ui, sans-serif; }
+  main { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  .globe { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; }
+  canvas { width: min(100%, 82vh); aspect-ratio: 1; cursor: grab; touch-action: pan-y; }
+  .globe p { max-width: 30rem; margin: 0; text-align: center; }
+  article { max-width: 41rem; padding: 9vh 5vw 12vh 1vw; }
+  h1 { margin: 0; font-size: clamp(2.4rem, 4.7vw, 5rem); font-weight: 800; font-stretch: 125%; letter-spacing: -.03em; line-height: 1; }
+  h2 { margin: 4.5rem 0 1rem; font-size: 1.7rem; font-weight: 700; font-stretch: 112%; line-height: 1.2; }
+  .lede { margin: 1rem 0 2rem; font-size: 1.45rem; line-height: 1.3; color: var(--gold); }
+  small, .globe p, .hint, dt { color: var(--mist); font-size: .9rem; }
+  a { color: var(--gold); }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+  fieldset { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.5rem; padding: 0; border: 0; }
+  fieldset input { position: absolute; opacity: 0; }
+  fieldset span, button { display: block; padding: .5rem 1rem; border: 1px solid var(--line); border-radius: 2rem; cursor: pointer; }
+  fieldset input:checked + span { background: var(--foam); color: var(--abyss); font-weight: 600; }
+  fieldset input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .slider { display: block; margin-bottom: 1.2rem; }
+  .slider b { float: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { display: block; width: 100%; margin: .4rem 0; accent-color: var(--gold); }
+  .hint { display: block; }
+  button { font: inherit; color: var(--foam); background: none; }
+  #launch { margin: 2rem 0 .5rem; padding: .8rem 1.6rem; border: 0; background: var(--gold); color: var(--abyss); font-weight: 700; }
+
+  dl { margin: 0; }
+  dl div { display: grid; grid-template-columns: 11rem 1fr; gap: 1rem; padding: .7rem 0; border-top: 1px solid var(--line); }
+  dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  dd small { display: block; font-weight: 400; }
+  #run { margin-bottom: 2.5rem; }
+  #run dd { color: var(--gold); }
+
+  .lands { margin: 1.5rem 0; padding: 0; list-style: none; }
+  .lands button { display: flex; justify-content: space-between; width: 100%; padding: .7rem 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; text-align: left; }
+  .lands button:hover { color: var(--coral); }
+  .lands b { font-variant-numeric: tabular-nums; }
+  svg { display: block; width: 100%; margin: 1.5rem 0; border-radius: .5rem; }
+  svg text { font-size: 13px; fill: var(--foam); }
+  li { margin-bottom: .6rem; }
+  footer { margin-top: 5rem; color: var(--mist); font-size: .9rem; }
+
+  @media (max-width: 860px) {
+    main { display: block; }
+    .globe { position: static; height: auto; }
+    canvas { width: min(100%, 70vh); }
+    article { padding: 1rem 1.2rem 5rem; }
+    h1 { font-size: 10.5vw; }
+    dl div { grid-template-columns: 8rem 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="globe">
+    <canvas id="globe" role="img" aria-label="The Earth with the accelerator ring around it"></canvas>
+    <p>Drag to turn. Gold is the ring, coral is where it tunnels under land. The real beam laps the planet 7.5 times a second; here it is slowed about 60 times.</p>
+  </div>
+
+  <article>
+    <h1>Jörmungandr</h1>
+    <p class="lede">A particle accelerator the size of the Earth.</p>
+    <p>In Norse myth, Jörmungandr is the sea serpent that grew until it circled the world and bit its own tail. This one is a vacuum tube 40,030 km long, floating 200 m under the oceans, steered by 2.1 million magnets. Light needs 133.5 ms to get round it.</p>
+    <p>Enrico Fermi sketched the same machine in 1954: a ring around the planet reaching 5 PeV, to be finished in 1994 for $170 billion. This page runs the numbers again. Everything below is computed live from the formulas at the bottom.</p>
+
+    <h2>Tune the machine</h2>
+    <fieldset>
+      <label><input type="radio" name="particle" value="proton" checked><span>Protons</span></label>
+      <label><input type="radio" name="particle" value="electron"><span>Electrons</span></label>
+      <label><input type="radio" name="particle" value="lead"><span>Lead nuclei</span></label>
+      <label><input type="radio" name="particle" value="muon"><span>Muons</span></label>
+    </fieldset>
+    <label class="slider">Bending magnets <b id="fieldOut"></b>
+      <input type="range" id="field" min="1" max="20" step="0.01" value="8.33">
+      <span class="hint">The LHC runs at 8.3 T. Its planned successor wants 14 T or more.</span>
+    </label>
+    <label class="slider">Accelerating cavities <b id="rfOut"></b>
+      <input type="range" id="rf" min="1" max="3.602" step="0.001" value="2.602">
+      <span class="hint" id="rfHint"></span>
+    </label>
+
+    <button id="launch">Launch a bunch</button>
+    <dl id="run">
+      <div><dt>Laps done</dt><dd id="runLaps"></dd></div>
+      <div><dt>Time since injection</dt><dd id="runTime"></dd></div>
+      <div><dt>Energy</dt><dd id="runEnergy"></dd></div>
+      <div><dt>Speed</dt><dd id="runSpeed"></dd></div>
+    </dl>
+    <dl id="specs"></dl>
+
+    <h2>The route</h2>
+    <p>No circle around the Earth misses land completely. Testing every possible ring against the Natural Earth coastline map, the one that crosses the least land is tilted 66° to the equator. It runs from Tasmania across the whole Pacific to Alaska, through northern Canada, down the Atlantic to West Africa and round the Southern Ocean back to Tasmania.</p>
+    <p>That leaves 3,451 km of tunnel to bore, 8.6% of the ring. A ring along the equator would need 8,762 km. Pick a crossing to turn the globe to it.</p>
+    <ul class="lands" id="lands"></ul>
+    <p><small>A ring over both poles would cross only 2,651 km of land, but it has to pass under the Antarctic ice sheet at 83° S and under two floating ice shelves, so it is ruled out.</small></p>
+
+    <h2>Under water, not on pylons</h2>
+    <p>A tube 50 m up in the air fails three ways.</p>
+    <ul>
+      <li>The ocean is 3,700 m deep on average. The pylons would be towers four times taller than any building, standing in hurricanes.</li>
+      <li>Steel in open air swings about 30 °C between seasons. Over 40,030 km that is 14 km of growing and shrinking.</li>
+      <li>The beam throws off gamma rays, and a lost beam sprays particles. In air nothing stops them.</li>
+    </ul>
+    <svg viewBox="0 0 600 200" role="img" aria-label="Cross-section: the tube floats 200 m below the surface, tethered to the seabed">
+      <rect width="600" height="200" fill="#0a3340"/>
+      <rect width="600" height="40" fill="#041a21"/>
+      <path d="M0 40H600" stroke="#e4f2ec"/>
+      <path d="M70 40l8-11h46l8 11z" fill="#8db0ab"/>
+      <path d="M300 92L262 184M300 92L338 184" stroke="#8db0ab" stroke-dasharray="4 4"/>
+      <circle cx="300" cy="84" r="9" fill="#05222b" stroke="#f4c95d" stroke-width="3"/>
+      <path d="M0 184Q150 172 300 185T600 180V200H0z" fill="#041a21"/>
+      <text x="150" y="33">sea level</text>
+      <text x="320" y="89">tube, 200 m down</text>
+      <text x="350" y="172">seabed, 3,700 m down on average</text>
+      <text x="12" y="172" fill-opacity=".6">not to scale</text>
+    </svg>
+    <p>So the tube floats 200 m down, held by tethers to the seabed, and goes into bored tunnel where it meets land.</p>
+    <ul>
+      <li>Storm waves fade with depth. At 200 m their motion is down to 1.5%, and every ship passes far overhead.</li>
+      <li>The pressure is 21 bar, routine for a submarine hull.</li>
+      <li>200 m of water is 240 nuclear interaction lengths, about the shielding the LHC gets from 100 m of rock.</li>
+      <li>The hardest radiation to stop is muons, which fly about 25 km through water at these energies. Leaving the tube in a straight line, they stay under water for 50 km before the curved surface drops away.</li>
+    </ul>
+
+    <h2>The maths</h2>
+    <ul>
+      <li>Magnet limit: <i>E</i> = <i>Z e c B ρ</i>, with bending radius <i>ρ</i> = 0.8 × 6,371 km, because magnets fill 80% of the ring.</li>
+      <li>Energy radiated per lap: <i>U</i> = <i>Z</i>²<i>e</i>²<i>γ</i>⁴ / 3<i>ε</i>₀<i>ρ</i>.</li>
+      <li>Energy gained per lap: <i>Z e</i> × 30 MV/m × the length of cavities.</li>
+      <li>Top energy: the magnet limit, or 99% of the energy where loss equals gain, whichever is lower.</li>
+      <li>Laps to get there: integrate d<i>E</i>/d<i>n</i> = gain − <i>U</i>, which gives <i>n</i> = (<i>E</i><sub>eq</sub> / gain) × ½(artanh <i>x</i> + arctan <i>x</i>) with <i>x</i> = <i>E</i> / <i>E</i><sub>eq</sub>.</li>
+      <li>Typical photon energy: 3<i>ħcγ</i>³ / 2<i>ρ</i>.</li>
+      <li>Beam: 0.74 A, the LHC's bunches (1.15 × 10¹¹ protons every 25 ns) all the way round.</li>
+      <li>Muons decay with lifetime <i>γ</i> × 2.2 µs, counted over every lap of the ramp.</li>
+    </ul>
+
+    <footer>Built from one prompt as a test of Claude Fable 5.2. <a href="https://github.com/patrikbartas/jormungandr">Source and notes on GitHub</a>.</footer>
+  </article>
+</main>
+
+<script>
+// ---------- Physics ----------
+const C = 2 * Math.PI * 6371008.8;                  // m, ring length (mean Earth circumference)
+const RHO = 0.8 * 6371008.8;                        // m, bending radius: magnets fill 80% of the ring
+const LIGHT = 299792458;                            // m/s
+const LAP = C / LIGHT;                              // s per lap at light speed
+const GRADIENT = 30e6;                              // V/m inside the accelerating cavities
+const K = 1.602176634e-19 / (3 * 8.8541878128e-12); // eV·m, e/3ε0: radiation per lap = K Z² γ⁴ / ρ
+const HBAR_C = 1.973269804e-7;                      // eV·m
+const CURRENT = 0.74;                               // A, beam current
+
+const PARTICLES = {                                 // mass in eV, charge Z, today's record [who, eV]
+  proton:   { mass: 938.272e6, Z: 1, record: ['the LHC', 6.8e12] },
+  electron: { mass: 0.510999e6, Z: 1, record: ['LEP', 104.5e9] },
+  lead:     { mass: 193.687e9, Z: 82, record: ['the LHC', 82 * 6.8e12] },
+  muon:     { mass: 105.658e6, Z: 1, life: 2.197e-6 },
+};
+
+let m; // numbers for the current settings
+
+function update() {
+  const p = PARTICLES[document.querySelector('[name=particle]:checked').value];
+  const B = +$('field').value;
+  const rfKm = Math.round(10 ** $('rf').value);
+  const volts = rfKm * 1e3 * GRADIENT;                // RF voltage per lap
+  const kick = p.Z * volts;                           // eV gained per lap
+  const magnetLimit = p.Z * LIGHT * B * RHO;          // eV
+  const gammaEq = (volts * RHO / (p.Z * K)) ** 0.25;  // where radiation loss equals RF gain
+  const radiationLimit = gammaEq * p.mass;
+  const top = Math.min(magnetLimit, 0.99 * radiationLimit);
+  const x = top / radiationLimit;
+  const gamma = top / p.mass;
+  const lapsAt = x => radiationLimit / kick * (Math.atanh(x) + Math.atan(x)) / 2;
+  const laps = lapsAt(x);
+  const loss = K * p.Z ** 2 * gamma ** 4 / RHO;       // eV radiated per lap
+  const photon = 1.5 * HBAR_C * gamma ** 3 / RHO;
+  const needed = top / (p.Z * LIGHT * RHO);           // T, field actually used
+  const stored = CURRENT * LAP * top / p.Z;           // J in one beam
+  const power = CURRENT * loss / p.Z;                 // W radiated by one beam
+  const lapsTo = g => (g - 1) * p.mass / kick;        // laps to reach Lorentz factor g
+  m = { p, top, x, laps, lapsAt, radiationLimit };
+
+  $('fieldOut').textContent = B.toFixed(2) + ' T';
+  $('rfOut').textContent = num(rfKm) + ' km';
+  $('rfHint').textContent = `${(rfKm / C * 1e5).toFixed(2)}% of the ring, pushing at 30 MV/m. Each lap adds ${si(volts, 'eV')} per unit of charge.`;
+
+  const rows = [
+    ['Energy per particle', si(top, 'eV'), p.record ? `${num(top / p.record[1])} times ${p.record[0]}` : 'no muon collider exists yet'],
+    ['Collision energy', si(2 * top, 'eV'), 'two beams meeting head-on'],
+    ['Held back by', magnetLimit < 0.99 * radiationLimit ? 'the magnets' : 'its own radiation',
+      magnetLimit < 0.99 * radiationLimit ? 'a stronger field would give more energy' : `the magnets only need ${needed < 0.1 ? num(needed * 1e3) + ' mT' : num(needed) + ' T'}`],
+    ['Top speed', speed(gamma), `one second for the particle lasts ${time(gamma)} here`],
+    ['Nearly light speed', `99% after ${km(lapsTo(7.0888) * C)}`,
+      `99.9999% after ${km(lapsTo(707.107) * C)}${lapsTo(707.107) < 1 ? ', still in the first lap' : ''}. The rest of the ramp adds energy, not speed.`],
+    ['Laps to top energy', num(laps), `${time(laps * LAP)} and ${km(laps * C)} of travel`],
+    ['Radiated per lap', si(loss, 'eV'), `by each particle, as photons of about ${si(photon, 'eV')}`],
+    ['Energy in the beam', si(stored, 'J'), `${num(stored / 4.184e12)} kilotons of TNT`],
+    ['Power radiated', si(power, 'W'), 'all of humanity uses about 19 TW'],
+  ];
+  if (p.life) {
+    const decays = LAP * p.mass / (p.life * kick) * (Math.log(x * gammaEq) - Math.log(1 - x ** 4) / 4);
+    rows.push(['Muons that survive', decays > 20 ? 'none' : num(100 * Math.exp(-decays)) + '%', `at top energy they live ${time(gamma * p.life)}`]);
+  }
+  $('specs').innerHTML = rows.map(([name, value, note]) => `<div><dt>${name}</dt><dd>${value}<small>${note}</small></dd></div>`).join('');
+
+  launch = 0;
+  $('launch').textContent = 'Launch a bunch';
+  readout(0);
+}
+
+function readout(n) {            // the bunch after n laps
+  let lo = 0, hi = m.x;          // solve lapsAt(x) = n by bisection
+  for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; m.lapsAt(mid) < n ? lo = mid : hi = mid; }
+  const energy = n ? hi * m.radiationLimit : 0;
+  $('runLaps').textContent = n < 10 ? n.toFixed(2) : num(n);
+  $('runTime').textContent = time(n * LAP);
+  $('runEnergy').textContent = si(energy, 'eV');
+  $('runSpeed').textContent = speed(1 + energy / m.p.mass);
+}
+
+// ---------- Formatting ----------
+const $ = id => document.getElementById(id);
+
+function num(n) {
+  if (n >= 1e9) return +(n / 1e9).toPrecision(3) + ' billion';
+  if (n >= 1e6) return +(n / 1e6).toPrecision(3) + ' million';
+  if (n >= 1e3) return Math.round(n).toLocaleString('en-US');
+  return String(+n.toPrecision(3));
+}
+function si(value, unit) {       // 9.32e15, 'eV' -> '9.32 PeV'
+  const i = Math.min(Math.max(Math.floor(Math.log10(value) / 3), 0), 7);
+  return +(value / 1000 ** i).toPrecision(3) + ' ' + ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z'][i] + unit;
+}
+function km(metres) {
+  return metres < 1000 ? num(metres) + ' m' : num(metres / 1000) + ' km';
+}
+function time(s) {
+  if (s < 1) return num(s * 1e3) + ' ms';
+  if (s < 120) return num(s) + ' s';
+  if (s < 7200) return num(s / 60) + ' minutes';
+  if (s < 172800) return num(s / 3600) + ' hours';
+  if (s < 63072000) return num(s / 86400) + ' days';
+  return num(s / 31557600) + ' years';
+}
+function speed(gamma) {          // fraction of light speed, with every nine written out
+  const gap = gamma > 1e4 ? 1 / (2 * gamma ** 2) : 1 - Math.sqrt(1 - 1 / gamma ** 2);
+  if (gap > 0.1) return (1 - gap).toFixed(3) + ' c';
+  const e = Math.floor(Math.log10(gap));
+  const tail = String(1000 - Math.round(gap / 10 ** e * 100)).padStart(3, '0');
+  return '0.' + '9'.repeat(-e - 1) + tail + ' c';
+}
+
+// ---------- Globe ----------
+const POLE = [23.98, 79.05];     // lat, lon of the ring's axis, found by route.py
+const CROSSINGS = [              // name, km, spans in degrees along the ring (from route.py)
+  ['Alaska and northern Canada', 2915, [[71.07, 94.75], [95.15, 95.71], [96.11, 97.52], [103.05, 103.62], [104.38, 104.5]]],
+  ['Senegal and Guinea-Bissau', 116, [[165.85, 166.69], [167.35, 167.38], [167.73, 167.9]]],
+  ['An Antarctic ice shelf', 18, [[277.13, 277.29]]],
+  ['Tasmania', 149, [[312.6, 313.94]]],
+  ['South-east Australia', 253, [[317.88, 319.97], [320.89, 321.11]]],
+];
+const MASK = atob('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//8AAf///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////h//////7+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////5////////wAAAAAAAAABwMgAAAAPgAAAAAAAAAAAAAAAAAAAAAAAAAAA///8Af//////+AAAAB//wAAAAAAAAAAD8AAAAAAAAAAAAAAAAAAAAAAAAEDzH//4////////4AAAAA/8AAAAAAAAAAAAD4AAAAAAAAAAAAAAAAAAAAAAAYAAAP/Af///////+AAAAAPDAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAD9DCc//+AH///////4AAAAAAAAAAAAAB4AAAAD/8AAAAAAAAAAAAAAAAAAAAAH/wcz78AAAf/////8AAAAAAAAAAAAD4AAAB////AAAB/gAAAAAAAAAAAAAACAQAAAOAAAAH/////8AAAAAAAAAAAAeAAAAP///6AAAAAAAAAAAAAAAAAAAAP8AYe+c/gAAD/////4AAAAAAAAAAAA4AAAH/////8DwAGAAAAAAAAAAAAAAAf/+4+Q//4AAD/////wAAAAAAAAAAABwAHg3///////4APgAAAAAwAAAAAAAAOP/8E4///AAB/////wAAAAAAAAAAADwAPf////////43//gAAAAAAAP8gAAAAH/+A8f//4AA////+wAAAAAAD/AAAAAAfv/////////////8AAAAAB///+F//H//H+Bwf+AA3////AAAAAAB//4AAAA8Pv///////////////n8wAP////////Y4DPzwP+AAf///wAAAAAAH///wMDf/3n/////////////////+AD////////////3wZ/wA///4AAAAAAAH///+M////v//////////////////4E/////////////gD/8A///wAAAAAAAf///+v//////////////////////L4f////////////7AD+YAf/4AA/8AAAA/8f+D///////////////////////AgIf///////////zw//gAP/wAAP8AAAB/4/+f//////////////////////+AAA////////////DAA/wAH/gAADAAAAP/z/////////////////////////+AAH///////////8AwgHAAD/AAAAAAAA//H/////////////////////////6AAP///////////wAA/AAAB/AAAAAAAB/+H//////////////////////jP+AAAH/9z////////gAA/wAAAOAAAAAAAB//H/////////////////////+A/YAAAA/7AB///////gAA/4wAAAAAAAAAAB//g7///////////////////+eDgAAAAADwAAf//////4AA/94AAAAAAAAAYA5+C///////////////////4AAHAAAAAADIAAP//////4AAf/8AAAAAAAAA8AA+i///////////////////wAAfgAAAAAMAAAH///////wAf/+AAAAAAAAA4AOcH///////////////////AAA/gAAAAAwAAAD///////+Af//AAAAAAAAAcAPwH//////////////////8AAA/AAAAAAAAAAAf///////x///wAAAAAAAHOAGBv//////////////////+AAA+AAAAAAAAAABP///////x///8AAAAAAAPHAf/////////////////////6AA8AAAAAAAAAAAH///////x///8AAAAAAAPPx//////////////////////+AA4AAAAAAAAAAAD///////9///8AAAAAAAIPn//////////////////////6AAQAAAAAAAAAAAD///////////EAAAAAAAAYP//////////////////////7AAAAAAAAAAAAAAB/////////+APAAAAAAAAA///////////////////////zAAAAAAAAAAAAAAAf/////////wfgAAAAAAAP///////////////////////yAAAAAAAAAAAAAAAP/////////gDgAAAAAAAH///////////////////////iAAAAAAAAAAAAAAAP/////////xAAAAAAAAAD/////vP/x//////////////CAAAAAAAAAAAAAAAP/////////+AAAAAAAAAB/////Gf/D/////////////+AAAAAAAAAAAAAAAAP////////8wAAAAAAAAAB//H/+AP+H/////////////8CAAAAAAAAAAAAAAAP////////wAAAAAAAAADj/jz/8AD/H/////////////4HgAAAAAAAAAAAAAAP////////gAAAAAAAAAH/4Bw/8AB/D////////////+ALAAAAAAAAAAAAAAAP////////gAAAAAAAAAH/wAcf8PB/g////////////8AIAAAAAAAAAAAAAAAP///////8AAAAAAAAAAH/gMHfN///x///////////v4AMAAAAAAAAAAAAAAAP///////8AAAAAAAAAAH/AMCOP///h//////////+ZwAMAAAAAAAAAAAAAAAH///////4AAAAAAAAAAH/AAAHH///g//////////8BwAIAAAAAAAAAAAAAAAD///////wAAAAAAAAAAH+AAYGH///w//////////+w4A4AAAAAAAAAAAAAAAD///////wAAAAAAAAAAAgf+AABs//////////////g4D4AAAAAAAAAAAAAAAB///////wAAAAAAAAAAAh/+AAAA//////////////A4f4AAAAAAAAAAAAAAAA///////gAAAAAAAAAAB//8AAAA//////////////Ah+AAAAAAAAAAAAAAAAAP/////+AAAAAAAAAAAD//+AAAB//////////////gDwAAAAAAAAAAAAAAAAAH/////8AAAAAAAAAAAH///4GAB//////////////gDAAAAAAAAAAAAAAAAAAH/////4AAAAAAAAAAAP///8P4T//////////////wCAAAAAAAAAAAAAAAAAACf////4AAAAAAAAAAAP////v////////////////gAAAAAAAAAAAAAAAAAAABf//jgYAAAAAAAAAAAP/////////P///////////wAAAAAAAAAAAAAAAAAAAAv//AAYAAAAAAAAAAAf/////////H///////////wAAAAAAAAAAAAAAAAAAAB3/+AAcAAAAAAAAAAB///////8//j///////////gAAAAAAAAAAAAAAAAAAAAb/+AAMAAAAAAAAAAD///////8//wH//////////AAAAAAAAAAAAAAAAAAAAAJ/+AAEAAAAAAAAAAH///////+f/8B//////////AAAAAAAAAAAAAAAAAAAAAM/8AAAAAAAAAAAAAH///////+f/84Af///////8QAAAAAAAAAAAAAAAAAAAAAf8AAAAAAAAAAAAAP////////H//+AP///////4wAAAAAAAAAAAAAAAAAAAAAP8AAuAAAAAAAAAAf////////H///AH///////ggAAAAAAAAAAAAAAAAAAAAAH+AYBgAAAAAAAAAf////////n//+AD//4P//YAAAAAAAAAAAAAAAAAAAAAAAP+A4A4AAAAAAAAAf////////j//8AAf/4H/+AAAAAAAAAAAAAAAAgAAAAAAAH/B4ABwAAAAAAAAP////////h//8AAf/gD/8YAAAAAAAAAAAAAAAAAAAAAAAD/nwAh4AAAAAAAAP////////x//4AAf/AD/8QAQAAAAAAAAAAAAAAAAAAAAAAf/wAAAAAAAAAAAP////////4//gAAf+AD/+AAwAAAAAAAAAAAAAAAAAAAAAAH/wAAAAAAAAAAAP////////4f+AAAf8ADf/AAwAAAAAAAAAAAAAAAAAAAAAAAH/AAAAAAAAAAAf////////8f8AAAPwAAP/gAwAAAAAAAAAAAAAAAAAAAAAAAD/gAAAAAAAAAAf////////+fgAAAPwAAP/gAwAAAAAAAAAAAAAAAAAAAAAAAA/AAAAAAAAAAAf/////////eAAAAHwAAP/gAUAAAAAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAAAf/////////gAAAAHwAAM/gAAAAAAAAAAAAAAAAAAAAAAAAAADABIAAAAAAAAP/////////gIAAADwAAMfgALAAAAAAAAAAAAAAAAAAAAAAAADgH/IAAAAAAAH/////////34AAADwAAIOAAEAAAAAAAAAAAAAAAAAAAAAAAAAyPf+AAAAAAAD//////////4AAADoAAIEAAAAAAAAAAAAAAAAAAAAAAAAAAAAd///AAAAAAAB//////////wAAABIAAMAAAHAAAAAAAAAAAAAAAAAAAAAAAAAE///gAAAAAAB//////////wAAAAMAAEAAALgAAAAAAAAAAAAAAAAAAAAAAAAA///wAAAAAAAf/////////gAAAAMAADAAMDAAAAAAAAAAAAAAAAAAAAAAAAAAf///gAAAAAAP/B///////gAAAAAABDgAOAAAAAAAAAAAAAAAAAAAAAAAAAAAf///wAAAAAACAA3//////AAAAAAAAxgA8AAAAAAAAAAAAAAAAAAAAAAAAAAAf///4AAAAAAAAAD/////+AAAAAAAAZgB8AAAAAAAAAAAAAAAAAAAAAAAAAAA////4AAAAAAAAAD/////8AAAAAAAAMwH8AAAAAAAAAAAAAAAAAAAAAAAAAAB////8AAAAAAAAAD/////4AAAAAAAAHQf8AAAAAAAAAAAAAAAAAAAAAAAAAAD////8AAAAAAAAAH/////gAAAAAAAAHwf88AAAAAAAAAAAAAAAAAAAAAAAAAD/////AAAAAAAAAH/////AAAAAAAAADwf8AAgAAAAAAAAAAAAAAAAAAAAAAAH/////4AAAAAAAAH/////AAAAAAAAAB4P5wBwAAAAAAAAAAAAAAAAAAAAAAAH/////+AAAAAAAAD////+AAAAAAAAAB8PxwAz4AAAAAAAAAAAAAAAAAAAAAAH//////4AAAAAAAB////8AAAAAAAAAA8AxQgf/AAAAAAAAAAAAAAAAAAAAAAH//////8AAAAAAAA////4AAAAAAAAAAcAAIAD/gIAAAAAAAAAAAAAAAAAAAAH///////gAAAAAAA////4AAAAAAAAAAMAAAAA/xwAAAAAAAAAAAAAAAAAAAAD///////gAAAAAAA////4AAAAAAAAAADgAAAI/8BAAAAAAAAAAAAAAAAAAAAD///////gAAAAAAAf///4AAAAAAAAAAB/AAAA/4AAAAAAAAAAAAAAAAAAAAAB///////gAAAAAAAf///4AAAAAAAAAAAAOhAAPMAAAAAAAAAAAAAAAAAAAAAA///////AAAAAAAAf///8AAAAAAAAAAAAACAAAHAAAAAAAAAAAAAAAAAAAAAA///////AAAAAAAAP///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf/////+AAAAAAAAP///+AAAAAAAAAAAAAAAgCAAAAAAAAAAAAAAAAAAAAAAAf/////8AAAAAAAAf///+AQAAAAAAAAAAAAB+CAAAAAAAAAAAAAAAAAAAAAAAP/////4AAAAAAAAf///+AwAAAAAAAAAAAAD8DAAAAAAAAAAAAAAAAAAAAAAAP/////4AAAAAAAA////+AwAAAAAAAAAAAB38DgAAAAAAAAAAAAAAAAAAAAAAH/////4AAAAAAAA////+DwAAAAAAAAAAAB/8HgAAAAAAAAAAAAAAAAAAAAAAB/////4AAAAAAAA////8PwAAAAAAAAAAAD//HwAAAAAAAAAAAAAAAAAAAAAAAf////4AAAAAAAA////wPwAAAAAAAAAAAP//3wAAAAAAAAAAAAAAAAAAAAAAAP////wAAAAAAAA////gPgAAAAAAAAAAAP///wAAAAAAAAAAAAAAAAAAAAAAAP////wAAAAAAAAf//+APgAAAAAAAAAAAf///4AAAAAAAAAAAAAAAAAAAAAAAP////wAAAAAAAAf//+APgAAAAAAAAAAD////+AAAAAAAAAAAAAAAAAAAAAAAP////gAAAAAAAAP//+APAAAAAAAAAAAf////+AAEAAAAAAAAAAAAAAAAAAAAP////AAAAAAAAAP///AfAAAAAAAAAAA//////gAAAAAAAAAAAAAAAAAAAAAAf///4AAAAAAAAAP//+APAAAAAAAAAAA//////gAAAAAAAAAAAAAAAAAAAAAAf///gAAAAAAAAAH//+AOAAAAAAAAAAB//////wAAAAAAAAAAAAAAAAAAAAAAf///AAAAAAAAAAH//4AEAAAAAAAAAAA//////4AAAAAAAAAAAAAAAAAAAAAAf//+AAAAAAAAAAH//4AAAAAAAAAAAAA//////4AAAAAAAAAAAAAAAAAAAAAAf///AAAAAAAAAAH//4AAAAAAAAAAAAA//////4AAAAAAAAAAAAAAAAAAAAAAf//+AAAAAAAAAAD//wAAAAAAAAAAAAA//////8AAAAAAAAAAAAAAAAAAAAAAf//8AAAAAAAAAAB//gAAAAAAAAAAAAAf/////4AAAAAAAAAAAAAAAAAAAAAA///8AAAAAAAAAAB//gAAAAAAAAAAAAAf/////4AAAAAAAAAAAAAAAAAAAAAA///wAAAAAAAAAAA//AAAAAAAAAAAAAAP/////4AAAAAAAAAAAAAAAAAAAAAA///wAAAAAAAAAAA/+AAAAAAAAAAAAAAP/AP//wAAAAAAAAAAAAAAAAAAAAAA///gAAAAAAAAAAA/4AAAAAAAAAAAAAAf8AG//gAAAAAAAAAAAAAAAAAAAAAA///AAAAAAAAAAAAYAAAAAAAAAAAAAAAOAAF//gAAAAAAAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf/AAABAAAAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAAgAAAAAAAAAAAAAAAAAD//4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAAQAAAAAAAAAAAAAAAAAD//wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABYAAAAcAAAAAAAAAAAAAAAAAB/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAD/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAD/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAADAAAAAAAAAAAAAAAAAAD/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAHAAAAAAAAAAAAAAAAAAB/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAOAAAAAAAAAAAAAAAAAAD/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAAH+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4AAAAAAAAAAAAAAAAAAH+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAH/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH8AAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH4AwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAAAAAAAAAAAAAAAAAAAAAAAAAAyQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/AAAAAAAAAAAAAAAAAAH4AAAAcB/+PgBj/AAAAAAAAAAAAAAAAAAAAAAAAAH/AAAAAAAAAAAAAAAAAD//gAAD//////////wAAAAAAAAAAAAAAAAAAAAAAAB+AAAAAAAAAAAAAAAAB////8A////////////uAAAAAAAAAAAAAAAAAAAAAAz+AAAAAAAAAAAAIAB/j/////z/////////////8AAAAAAAAAAAAAAAAAAAAH/+AAAAAAAAB////////////////////////////gAAAAAAAAAAAAAAAAAAAH//AAAAAAAA//////////////////////////////wAAAAAAAAAAAAAB/wABh//AAAAAAAf//////////////////////////////wAAAAAAAAABAAAB//+H///AAAAAAH///////////////////////////////gAAAAAAAAD///8A//////+AAAAAB///////////////////////////////4AAAAAAAD//////////////gAAAAH///////////////////////////////gAAAAAAA////////////////AAAA////////////////////////////////gAAAAAD/////////////////8AAP////////////////////////////////z8A//B/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////'); // land/sea, 1 bit per degree cell, 180 rows of 360
+
+const rad = d => d * Math.PI / 180;
+const vec = (lat, lon) => [Math.cos(rad(lat)) * Math.cos(rad(lon)), Math.cos(rad(lat)) * Math.sin(rad(lon)), Math.sin(rad(lat))];
+
+const dots = [];                 // one dot per land cell, thinned towards the poles to keep density even
+for (let lat = -89.5; lat < 90; lat++) {
+  const step = Math.round(1 / Math.cos(rad(lat)));
+  for (let lon = -179.5; lon < 180; lon += step) {
+    const bit = Math.floor(90 - lat) * 360 + Math.floor(lon + 180);
+    if (MASK.charCodeAt(bit >> 3) & (128 >> (bit & 7))) dots.push(vec(lat, lon));
+  }
+}
+
+// The ring is every point 90° from the pole: U cos t + V sin t.
+const U = [-Math.sin(rad(POLE[1])), Math.cos(rad(POLE[1])), 0];
+const V = [-Math.sin(rad(POLE[0])) * Math.cos(rad(POLE[1])), -Math.sin(rad(POLE[0])) * Math.sin(rad(POLE[1])), Math.cos(rad(POLE[0]))];
+const ringAt = t => U.map((u, i) => u * Math.cos(rad(t)) + V[i] * Math.sin(rad(t)));
+
+const canvas = $('globe'), ctx = canvas.getContext('2d');
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let view = { lat: 22, lon: -150 }, target = null, spin = !calm, drag = null;
+let beam = 40, launch = 0, last = 0;
+
+function draw() {
+  const size = Math.round(canvas.clientWidth * devicePixelRatio);
+  if (canvas.width !== size) canvas.width = canvas.height = size;
+  const mid = size / 2, R = size * 0.45, px = size / 600;
+  const sl = Math.sin(rad(view.lon)), cl = Math.cos(rad(view.lon)), st = Math.sin(rad(view.lat)), ct = Math.cos(rad(view.lat));
+  const project = ([x, y, z]) => {   // -> screen x, screen y, depth (positive = facing us)
+    const toward = x * cl + y * sl;
+    return [mid + R * (y * cl - x * sl), mid - R * (z * ct - toward * st), toward * ct + z * st];
+  };
+  const arc = (from, to, color, width) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width * px;
+    for (let t = from; t < to; t += 0.5) {
+      const a = project(ringAt(t)), b = project(ringAt(Math.min(t + 0.5, to)));
+      ctx.globalAlpha = a[2] > 0 ? 1 : 0.25;   // the far side shows faintly through the planet
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    }
+  };
+
+  ctx.clearRect(0, 0, size, size);
+  const sea = ctx.createRadialGradient(mid - R * 0.35, mid - R * 0.4, R * 0.1, mid, mid, R);
+  sea.addColorStop(0, '#14586c');
+  sea.addColorStop(1, '#082e3a');
+  ctx.fillStyle = sea;
+  ctx.beginPath(); ctx.arc(mid, mid, R, 0, 7); ctx.fill();
+
+  ctx.fillStyle = '#d3eae1';
+  for (const dot of dots) {
+    const [x, y, depth] = project(dot);
+    if (depth > 0) { const s = R / 110 * (0.5 + depth); ctx.fillRect(x - s / 2, y - s / 2, s, s); }
+  }
+
+  ctx.lineCap = 'round';
+  arc(0, 360, '#f4c95d', 2);
+  for (const [, , spans] of CROSSINGS) for (const [a, b] of spans) arc(a, b, '#ff7a59', 5);
+
+  ctx.shadowColor = '#f4c95d';
+  ctx.shadowBlur = 14 * px;
+  for (let i = 40; i >= 0; i--) {              // the bunch and its fading tail
+    const [x, y, depth] = project(ringAt(beam - i * 0.7));
+    ctx.globalAlpha = (1 - i / 41) ** 2 * (depth > 0 ? 1 : 0.25);
+    ctx.fillStyle = i ? '#f4c95d' : '#fff';
+    ctx.beginPath(); ctx.arc(x, y, (i ? 2.2 : 4.5) * px, 0, 7); ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
+}
+
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1);
+  last = now;
+  if (spin) view.lon += 4 * dt;
+  if (target) {
+    const turn = ((target.lon - view.lon + 540) % 360) - 180;
+    view.lon += turn * Math.min(1, dt * 4);
+    view.lat += (target.lat - view.lat) * Math.min(1, dt * 4);
+    if (Math.abs(turn) < 0.1) target = null;
+  }
+  if (launch) {
+    const f = Math.min((now - launch) / 9000, 1);
+    readout(m.laps * f ** 3);
+    if (f === 1) { launch = 0; $('launch').textContent = 'Launch again'; }
+  }
+  if (launch || !calm) beam = (beam + dt * (launch ? 150 : 45)) % 360;
+  draw();
+  requestAnimationFrame(frame);
+}
+
+// ---------- Controls ----------
+canvas.onpointerdown = e => { canvas.setPointerCapture(e.pointerId); drag = [e.clientX, e.clientY]; spin = false; target = null; };
+canvas.onpointermove = e => {
+  if (!drag) return;
+  view.lon -= (e.clientX - drag[0]) * 0.4;
+  view.lat = Math.max(-85, Math.min(85, view.lat + (e.clientY - drag[1]) * 0.4));
+  drag = [e.clientX, e.clientY];
+};
+canvas.onpointerup = canvas.onpointercancel = () => drag = null;
+
+$('lands').innerHTML = CROSSINGS.map(([name, length], i) => `<li><button data-i="${i}">${name} <b>${num(length)} km</b></button></li>`).join('');
+$('lands').onclick = e => {
+  const button = e.target.closest('button');
+  if (!button) return;
+  const [a, b] = CROSSINGS[button.dataset.i][2][0], [x, y, z] = ringAt((a + b) / 2);
+  target = { lat: Math.asin(z) * 180 / Math.PI * 0.8, lon: Math.atan2(y, x) * 180 / Math.PI };
+  spin = false;
+};
+
+$('launch').onclick = () => { launch = performance.now(); beam = 0; $('launch').textContent = 'Accelerating…'; };
+document.querySelectorAll('input').forEach(input => input.oninput = update);
+
+update();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
