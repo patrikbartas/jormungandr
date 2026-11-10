@@ -7,56 +7,64 @@
 <meta name="description" content="A particle accelerator the size of the Earth, worked out with real physics.">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
 <style>
-  :root { --abyss: #05222b; --deep: #0a3340; --foam: #e4f2ec; --mist: #8db0ab; --gold: #f4c95d; --coral: #ff7a59; --line: rgba(228, 242, 236, .16); }
+  /* Black and white, following the system's light or dark mode. Colour is kept for the ring and the particles. */
+  :root { color-scheme: light dark; --paper: light-dark(#fff, #000); --ink: light-dark(#111, #f2f2f2); --mute: light-dark(#6b6b6b, #9a9a9a); --line: light-dark(#d9d9d9, #333); --wash: light-dark(#efefef, #1c1c1c); --ring: #ff9500; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--abyss); color: var(--foam); font: 1.05rem/1.6 Archivo, system-ui, sans-serif; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 1.05rem/1.6 Archivo, system-ui, sans-serif; }
   main { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
-  .globe { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; }
-  canvas { width: min(100%, 82vh); aspect-ratio: 1; cursor: grab; touch-action: pan-y; }
-  .globe p { max-width: 30rem; margin: 0; text-align: center; }
+  .globe { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .8rem; padding: 1rem; }
+  canvas { width: min(100%, 68vh); aspect-ratio: 1; cursor: grab; touch-action: pan-y; }
+  #hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: .2rem 1.5rem; width: min(100%, 30rem); margin: 0; }
+  #hud div:last-child { grid-column: 1 / -1; }
+  #status { max-width: 30rem; min-height: 3em; margin: 0; text-align: center; }
   article { max-width: 41rem; padding: 9vh 5vw 12vh 1vw; }
   h1 { margin: 0; font-size: clamp(2.4rem, 4.7vw, 5rem); font-weight: 800; font-stretch: 125%; letter-spacing: -.03em; line-height: 1; }
   h2 { margin: 4.5rem 0 1rem; font-size: 1.7rem; font-weight: 700; font-stretch: 112%; line-height: 1.2; }
-  .lede { margin: 1rem 0 2rem; font-size: 1.45rem; line-height: 1.3; color: var(--gold); }
-  small, .globe p, .hint, dt { color: var(--mist); font-size: .9rem; }
-  a { color: var(--gold); }
-  :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .lede { margin: 1rem 0 2rem; font-size: 1.45rem; line-height: 1.3; color: var(--mute); }
+  small, #status, .hint, .where, dt { color: var(--mute); font-size: .9rem; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+  dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
   fieldset { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.5rem; padding: 0; border: 0; }
   fieldset input { position: absolute; opacity: 0; }
   fieldset span, button { display: block; padding: .5rem 1rem; border: 1px solid var(--line); border-radius: 2rem; cursor: pointer; }
-  fieldset input:checked + span { background: var(--foam); color: var(--abyss); font-weight: 600; }
-  fieldset input:focus-visible + span { outline: 2px solid var(--gold); outline-offset: 3px; }
+  fieldset input:checked + span, .go { background: var(--ink); color: var(--paper); font-weight: 600; }
+  fieldset input:focus-visible + span { outline: 2px solid var(--ring); outline-offset: 3px; }
   .slider { display: block; margin-bottom: 1.2rem; }
   .slider b { float: right; font-variant-numeric: tabular-nums; }
-  input[type=range] { display: block; width: 100%; margin: .4rem 0; accent-color: var(--gold); }
+  input[type=range] { display: block; width: 100%; margin: .4rem 0; accent-color: var(--ink); }
   .hint { display: block; }
-  button { font: inherit; color: var(--foam); background: none; }
-  #launch { margin: 2rem 0 .5rem; padding: .8rem 1.6rem; border: 0; background: var(--gold); color: var(--abyss); font-weight: 700; }
+  button { font: inherit; color: inherit; background: none; }
+  .go { padding: .8rem 1.6rem; border-color: var(--ink); }
+  #collide { margin: 2rem 0 .8rem; }
 
-  dl { margin: 0; }
-  dl div { display: grid; grid-template-columns: 11rem 1fr; gap: 1rem; padding: .7rem 0; border-top: 1px solid var(--line); }
-  dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-  dd small { display: block; font-weight: 400; }
-  #run { margin-bottom: 2.5rem; }
-  #run dd { color: var(--gold); }
+  .sheet { margin: 2.5rem 0 0; }
+  .sheet div { display: grid; grid-template-columns: 11rem 1fr; gap: 1rem; padding: .7rem 0; border-top: 1px solid var(--line); }
+  .sheet small { display: block; font-weight: 400; }
+
+  .base { padding: 2rem 0 2.5rem; border-top: 1px solid var(--line); }
+  .base h3 { margin: 0; font-size: 3rem; font-weight: 800; font-stretch: 125%; letter-spacing: -.03em; line-height: 1.1; }
+  .base p { margin: .3rem 0 1rem; }
 
   .lands { margin: 1.5rem 0; padding: 0; list-style: none; }
   .lands button { display: flex; justify-content: space-between; width: 100%; padding: .7rem 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; text-align: left; }
-  .lands button:hover { color: var(--coral); }
+  .lands button:hover { color: var(--ring); }
   .lands b { font-variant-numeric: tabular-nums; }
-  svg { display: block; width: 100%; margin: 1.5rem 0; border-radius: .5rem; }
-  svg text { font-size: 13px; fill: var(--foam); }
+  svg { display: block; width: 100%; margin: 1.5rem 0; }
+  svg text { font-size: 13px; fill: var(--ink); }
   li { margin-bottom: .6rem; }
-  footer { margin-top: 5rem; color: var(--mist); font-size: .9rem; }
+  footer { margin-top: 5rem; color: var(--mute); font-size: .9rem; }
 
   @media (max-width: 860px) {
     main { display: block; }
-    .globe { position: static; height: auto; }
-    canvas { width: min(100%, 70vh); }
-    article { padding: 1rem 1.2rem 5rem; }
+    .globe { height: auto; padding: .5rem 1.2rem; z-index: 1; background: var(--paper); border-bottom: 1px solid var(--line); }
+    canvas { width: min(100%, 36vh); }
+    #hud { font-size: .85rem; }
+    #status { display: none; }
+    article { padding: 2rem 1.2rem 5rem; }
     h1 { font-size: 10.5vw; }
-    dl div { grid-template-columns: 8rem 1fr; }
+    .sheet div { grid-template-columns: 8rem 1fr; }
   }
 </style>
 </head>
@@ -64,13 +72,19 @@
 <main>
   <div class="globe">
     <canvas id="globe" role="img" aria-label="The Earth with the accelerator ring around it"></canvas>
-    <p>Drag to turn. Gold is the ring, coral is where it tunnels under land. The real beam laps the planet 7.5 times a second; here it is slowed about 60 times.</p>
+    <dl id="hud">
+      <div><dt>Laps done</dt><dd id="runLaps"></dd></div>
+      <div><dt>Time</dt><dd id="runTime"></dd></div>
+      <div><dt>Energy each</dt><dd id="runEnergy"></dd></div>
+      <div><dt>Speed</dt><dd id="runSpeed"></dd></div>
+    </dl>
+    <p id="status" aria-live="polite"></p>
   </div>
 
   <article>
     <h1>Jörmungandr</h1>
     <p class="lede">A particle accelerator the size of the Earth.</p>
-    <p>In Norse myth, Jörmungandr is the sea serpent that grew until it circled the world and bit its own tail. This one is a vacuum tube 40,030 km long, floating 200 m under the oceans, steered by 2.1 million magnets. Light needs 133.5 ms to get round it.</p>
+    <p>In Norse myth, Jörmungandr is the sea serpent that grew until it circled the world and bit its own tail. This one is a vacuum tube 40,030 km long, floating 200 m under the oceans, steered by 2.1 million magnets. Two beams of particles race round it in opposite directions, 7.5 laps a second, until they are steered into each other.</p>
     <p>Enrico Fermi sketched the same machine in 1954: a ring around the planet reaching 5 PeV, to be finished in 1994 for $170 billion. This page runs the numbers again. Everything below is computed live from the formulas at the bottom.</p>
 
     <h2>Tune the machine</h2>
@@ -89,20 +103,19 @@
       <span class="hint" id="rfHint"></span>
     </label>
 
-    <button id="launch">Launch a bunch</button>
-    <dl id="run">
-      <div><dt>Laps done</dt><dd id="runLaps"></dd></div>
-      <div><dt>Time since injection</dt><dd id="runTime"></dd></div>
-      <div><dt>Energy</dt><dd id="runEnergy"></dd></div>
-      <div><dt>Speed</dt><dd id="runSpeed"></dd></div>
-    </dl>
-    <dl id="specs"></dl>
+    <button class="go" id="collide">Collide two beams</button>
+    <span class="hint">Two bunches set off in opposite directions from the far side of the ring. They gain energy lap by lap in separate pipes, and at top energy they are steered into each other at a base.</span>
+    <dl class="sheet" id="specs"></dl>
 
     <h2>The route</h2>
     <p>No circle around the Earth misses land completely. Testing every possible ring against the Natural Earth coastline map, the one that crosses the least land is tilted 66° to the equator. It runs from Tasmania across the whole Pacific to Alaska, through northern Canada, down the Atlantic to West Africa and round the Southern Ocean back to Tasmania.</p>
-    <p>That leaves 3,451 km of tunnel to bore, 8.6% of the ring. A ring along the equator would need 8,762 km. Pick a crossing to turn the globe to it.</p>
+    <p>That leaves 3,451 km of tunnel to bore, 8.6% of the ring. A ring along the equator would need 8,762 km. Pick a tunnel to turn the globe to it.</p>
     <ul class="lands" id="lands"></ul>
     <p><small>A ring over both poles would cross only 2,651 km of land, but it has to pass under the Antarctic ice sheet at 83° S and under two floating ice shelves, so it is ruled out.</small></p>
+
+    <h2>Three bases</h2>
+    <p>Beams can only be brought together where people can reach the machine, so the detector halls sit where the ring comes ashore. Each base is named after one of the serpent's family. Scroll to a base, point at it, or click its circle on the globe to fly there.</p>
+    <div id="bases"></div>
 
     <h2>Under water, not on pylons</h2>
     <p>A tube 50 m up in the air fails three ways.</p>
@@ -112,13 +125,12 @@
       <li>The beam throws off gamma rays, and a lost beam sprays particles. In air nothing stops them.</li>
     </ul>
     <svg viewBox="0 0 600 200" role="img" aria-label="Cross-section: the tube floats 200 m below the surface, tethered to the seabed">
-      <rect width="600" height="200" fill="#0a3340"/>
-      <rect width="600" height="40" fill="#041a21"/>
-      <path d="M0 40H600" stroke="#e4f2ec"/>
-      <path d="M70 40l8-11h46l8 11z" fill="#8db0ab"/>
-      <path d="M300 92L262 184M300 92L338 184" stroke="#8db0ab" stroke-dasharray="4 4"/>
-      <circle cx="300" cy="84" r="9" fill="#05222b" stroke="#f4c95d" stroke-width="3"/>
-      <path d="M0 184Q150 172 300 185T600 180V200H0z" fill="#041a21"/>
+      <rect y="40" width="600" height="160" fill="var(--wash)"/>
+      <path d="M0 40H600" stroke="var(--ink)"/>
+      <path d="M70 40l8-11h46l8 11z" fill="var(--ink)"/>
+      <path d="M300 92L262 184M300 92L338 184" stroke="var(--mute)" stroke-dasharray="4 4"/>
+      <circle cx="300" cy="84" r="9" fill="var(--paper)" stroke="var(--ring)" stroke-width="3"/>
+      <path d="M0 184Q150 172 300 185T600 180V200H0z" fill="var(--line)"/>
       <text x="150" y="33">sea level</text>
       <text x="320" y="89">tube, 200 m down</text>
       <text x="350" y="172">seabed, 3,700 m down on average</text>
@@ -139,12 +151,13 @@
       <li>Energy gained per lap: <i>Z e</i> × 30 MV/m × the length of cavities.</li>
       <li>Top energy: the magnet limit, or 99% of the energy where loss equals gain, whichever is lower.</li>
       <li>Laps to get there: integrate d<i>E</i>/d<i>n</i> = gain − <i>U</i>, which gives <i>n</i> = (<i>E</i><sub>eq</sub> / gain) × ½(artanh <i>x</i> + arctan <i>x</i>) with <i>x</i> = <i>E</i> / <i>E</i><sub>eq</sub>.</li>
+      <li>Collision energy: twice the energy of one particle, because the beams meet head-on.</li>
       <li>Typical photon energy: 3<i>ħcγ</i>³ / 2<i>ρ</i>.</li>
       <li>Beam: 0.74 A, the LHC's bunches (1.15 × 10¹¹ protons every 25 ns) all the way round.</li>
       <li>Muons decay with lifetime <i>γ</i> × 2.2 µs, counted over every lap of the ramp.</li>
     </ul>
 
-    <footer>Built from one prompt as a test of Claude Fable 5.2. <a href="https://github.com/patrikbartas/jormungandr">Source and notes on GitHub</a>.</footer>
+    <footer>Version 2. Built from two prompts as a test of Claude Fable 5.2. <a href="https://github.com/patrikbartas/jormungandr">Source and notes on GitHub</a>.</footer>
   </article>
 </main>
 
@@ -204,8 +217,8 @@ function update() {
       `99.9999% after ${km(lapsTo(707.107) * C)}${lapsTo(707.107) < 1 ? ', still in the first lap' : ''}. The rest of the ramp adds energy, not speed.`],
     ['Laps to top energy', num(laps), `${time(laps * LAP)} and ${km(laps * C)} of travel`],
     ['Radiated per lap', si(loss, 'eV'), `by each particle, as photons of about ${si(photon, 'eV')}`],
-    ['Energy in the beam', si(stored, 'J'), `${num(stored / 4.184e12)} kilotons of TNT`],
-    ['Power radiated', si(power, 'W'), 'all of humanity uses about 19 TW'],
+    ['Energy in one beam', si(stored, 'J'), `${num(stored / 4.184e12)} kilotons of TNT`],
+    ['Power radiated', si(power, 'W'), 'per beam; all of humanity uses about 19 TW'],
   ];
   if (p.life) {
     const decays = LAP * p.mass / (p.life * kick) * (Math.log(x * gammaEq) - Math.log(1 - x ** 4) / 4);
@@ -213,12 +226,12 @@ function update() {
   }
   $('specs').innerHTML = rows.map(([name, value, note]) => `<div><dt>${name}</dt><dd>${value}<small>${note}</small></dd></div>`).join('');
 
-  launch = 0;
-  $('launch').textContent = 'Launch a bunch';
+  run = null;
   readout(0);
+  $('status').textContent = 'Drag to turn. The thick stretches of the ring are tunnels under land, the circles are the bases. The real beams lap the planet 7.5 times a second; here they are slowed about 60 times.';
 }
 
-function readout(n) {            // the bunch after n laps
+function readout(n) {            // the bunches after n laps
   let lo = 0, hi = m.x;          // solve lapsAt(x) = n by bisection
   for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; m.lapsAt(mid) < n ? lo = mid : hi = mid; }
   const energy = n ? hi * m.radiationLimit : 0;
@@ -260,19 +273,28 @@ function speed(gamma) {          // fraction of light speed, with every nine wri
   return '0.' + '9'.repeat(-e - 1) + tail + ' c';
 }
 
-// ---------- Globe ----------
+// ---------- The ring, its tunnels and its bases ----------
 const POLE = [23.98, 79.05];     // lat, lon of the ring's axis, found by route.py
-const CROSSINGS = [              // name, km, spans in degrees along the ring (from route.py)
+const TUNNELS = [                // name, km, spans in degrees along the ring (from route.py)
   ['Alaska and northern Canada', 2915, [[71.07, 94.75], [95.15, 95.71], [96.11, 97.52], [103.05, 103.62], [104.38, 104.5]]],
   ['Senegal and Guinea-Bissau', 116, [[165.85, 166.69], [167.35, 167.38], [167.73, 167.9]]],
   ['An Antarctic ice shelf', 18, [[277.13, 277.29]]],
   ['Tasmania', 149, [[312.6, 313.94]]],
   ['South-east Australia', 253, [[317.88, 319.97], [320.89, 321.11]]],
 ];
+const BASES = [                  // at = degrees along the ring
+  { name: 'Loki', at: 85, place: 'Northwest Territories, Canada',
+    text: 'The serpent’s father, the trickster. The hall is cut into the Canadian Shield, which holds the oldest known rock on Earth, four billion years old and still.' },
+  { name: 'Fenrir', at: 166.2, place: 'Casamance, Senegal',
+    text: 'The serpent’s brother, the wolf. The ring comes ashore from the Atlantic here for only 116 km, under the mangroves. It is the only base in the tropics.' },
+  { name: 'Hel', at: 313.3, place: 'Central Highlands, Tasmania',
+    text: 'The serpent’s sister, queen of the underworld. The base furthest down under, with open ocean on both sides: the Pacific one way, the Southern Ocean the other.' },
+];
 const MASK = atob('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//8AAf///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////h//////7+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////5////////wAAAAAAAAABwMgAAAAPgAAAAAAAAAAAAAAAAAAAAAAAAAAA///8Af//////+AAAAB//wAAAAAAAAAAD8AAAAAAAAAAAAAAAAAAAAAAAAEDzH//4////////4AAAAA/8AAAAAAAAAAAAD4AAAAAAAAAAAAAAAAAAAAAAAYAAAP/Af///////+AAAAAPDAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAD9DCc//+AH///////4AAAAAAAAAAAAAB4AAAAD/8AAAAAAAAAAAAAAAAAAAAAH/wcz78AAAf/////8AAAAAAAAAAAAD4AAAB////AAAB/gAAAAAAAAAAAAAACAQAAAOAAAAH/////8AAAAAAAAAAAAeAAAAP///6AAAAAAAAAAAAAAAAAAAAP8AYe+c/gAAD/////4AAAAAAAAAAAA4AAAH/////8DwAGAAAAAAAAAAAAAAAf/+4+Q//4AAD/////wAAAAAAAAAAABwAHg3///////4APgAAAAAwAAAAAAAAOP/8E4///AAB/////wAAAAAAAAAAADwAPf////////43//gAAAAAAAP8gAAAAH/+A8f//4AA////+wAAAAAAD/AAAAAAfv/////////////8AAAAAB///+F//H//H+Bwf+AA3////AAAAAAB//4AAAA8Pv///////////////n8wAP////////Y4DPzwP+AAf///wAAAAAAH///wMDf/3n/////////////////+AD////////////3wZ/wA///4AAAAAAAH///+M////v//////////////////4E/////////////gD/8A///wAAAAAAAf///+v//////////////////////L4f////////////7AD+YAf/4AA/8AAAA/8f+D///////////////////////AgIf///////////zw//gAP/wAAP8AAAB/4/+f//////////////////////+AAA////////////DAA/wAH/gAADAAAAP/z/////////////////////////+AAH///////////8AwgHAAD/AAAAAAAA//H/////////////////////////6AAP///////////wAA/AAAB/AAAAAAAB/+H//////////////////////jP+AAAH/9z////////gAA/wAAAOAAAAAAAB//H/////////////////////+A/YAAAA/7AB///////gAA/4wAAAAAAAAAAB//g7///////////////////+eDgAAAAADwAAf//////4AA/94AAAAAAAAAYA5+C///////////////////4AAHAAAAAADIAAP//////4AAf/8AAAAAAAAA8AA+i///////////////////wAAfgAAAAAMAAAH///////wAf/+AAAAAAAAA4AOcH///////////////////AAA/gAAAAAwAAAD///////+Af//AAAAAAAAAcAPwH//////////////////8AAA/AAAAAAAAAAAf///////x///wAAAAAAAHOAGBv//////////////////+AAA+AAAAAAAAAABP///////x///8AAAAAAAPHAf/////////////////////6AA8AAAAAAAAAAAH///////x///8AAAAAAAPPx//////////////////////+AA4AAAAAAAAAAAD///////9///8AAAAAAAIPn//////////////////////6AAQAAAAAAAAAAAD///////////EAAAAAAAAYP//////////////////////7AAAAAAAAAAAAAAB/////////+APAAAAAAAAA///////////////////////zAAAAAAAAAAAAAAAf/////////wfgAAAAAAAP///////////////////////yAAAAAAAAAAAAAAAP/////////gDgAAAAAAAH///////////////////////iAAAAAAAAAAAAAAAP/////////xAAAAAAAAAD/////vP/x//////////////CAAAAAAAAAAAAAAAP/////////+AAAAAAAAAB/////Gf/D/////////////+AAAAAAAAAAAAAAAAP////////8wAAAAAAAAAB//H/+AP+H/////////////8CAAAAAAAAAAAAAAAP////////wAAAAAAAAADj/jz/8AD/H/////////////4HgAAAAAAAAAAAAAAP////////gAAAAAAAAAH/4Bw/8AB/D////////////+ALAAAAAAAAAAAAAAAP////////gAAAAAAAAAH/wAcf8PB/g////////////8AIAAAAAAAAAAAAAAAP///////8AAAAAAAAAAH/gMHfN///x///////////v4AMAAAAAAAAAAAAAAAP///////8AAAAAAAAAAH/AMCOP///h//////////+ZwAMAAAAAAAAAAAAAAAH///////4AAAAAAAAAAH/AAAHH///g//////////8BwAIAAAAAAAAAAAAAAAD///////wAAAAAAAAAAH+AAYGH///w//////////+w4A4AAAAAAAAAAAAAAAD///////wAAAAAAAAAAAgf+AABs//////////////g4D4AAAAAAAAAAAAAAAB///////wAAAAAAAAAAAh/+AAAA//////////////A4f4AAAAAAAAAAAAAAAA///////gAAAAAAAAAAB//8AAAA//////////////Ah+AAAAAAAAAAAAAAAAAP/////+AAAAAAAAAAAD//+AAAB//////////////gDwAAAAAAAAAAAAAAAAAH/////8AAAAAAAAAAAH///4GAB//////////////gDAAAAAAAAAAAAAAAAAAH/////4AAAAAAAAAAAP///8P4T//////////////wCAAAAAAAAAAAAAAAAAACf////4AAAAAAAAAAAP////v////////////////gAAAAAAAAAAAAAAAAAAABf//jgYAAAAAAAAAAAP/////////P///////////wAAAAAAAAAAAAAAAAAAAAv//AAYAAAAAAAAAAAf/////////H///////////wAAAAAAAAAAAAAAAAAAAB3/+AAcAAAAAAAAAAB///////8//j///////////gAAAAAAAAAAAAAAAAAAAAb/+AAMAAAAAAAAAAD///////8//wH//////////AAAAAAAAAAAAAAAAAAAAAJ/+AAEAAAAAAAAAAH///////+f/8B//////////AAAAAAAAAAAAAAAAAAAAAM/8AAAAAAAAAAAAAH///////+f/84Af///////8QAAAAAAAAAAAAAAAAAAAAAf8AAAAAAAAAAAAAP////////H//+AP///////4wAAAAAAAAAAAAAAAAAAAAAP8AAuAAAAAAAAAAf////////H///AH///////ggAAAAAAAAAAAAAAAAAAAAAH+AYBgAAAAAAAAAf////////n//+AD//4P//YAAAAAAAAAAAAAAAAAAAAAAAP+A4A4AAAAAAAAAf////////j//8AAf/4H/+AAAAAAAAAAAAAAAAgAAAAAAAH/B4ABwAAAAAAAAP////////h//8AAf/gD/8YAAAAAAAAAAAAAAAAAAAAAAAD/nwAh4AAAAAAAAP////////x//4AAf/AD/8QAQAAAAAAAAAAAAAAAAAAAAAAf/wAAAAAAAAAAAP////////4//gAAf+AD/+AAwAAAAAAAAAAAAAAAAAAAAAAH/wAAAAAAAAAAAP////////4f+AAAf8ADf/AAwAAAAAAAAAAAAAAAAAAAAAAAH/AAAAAAAAAAAf////////8f8AAAPwAAP/gAwAAAAAAAAAAAAAAAAAAAAAAAD/gAAAAAAAAAAf////////+fgAAAPwAAP/gAwAAAAAAAAAAAAAAAAAAAAAAAA/AAAAAAAAAAAf/////////eAAAAHwAAP/gAUAAAAAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAAAf/////////gAAAAHwAAM/gAAAAAAAAAAAAAAAAAAAAAAAAAADABIAAAAAAAAP/////////gIAAADwAAMfgALAAAAAAAAAAAAAAAAAAAAAAAADgH/IAAAAAAAH/////////34AAADwAAIOAAEAAAAAAAAAAAAAAAAAAAAAAAAAyPf+AAAAAAAD//////////4AAADoAAIEAAAAAAAAAAAAAAAAAAAAAAAAAAAAd///AAAAAAAB//////////wAAABIAAMAAAHAAAAAAAAAAAAAAAAAAAAAAAAAE///gAAAAAAB//////////wAAAAMAAEAAALgAAAAAAAAAAAAAAAAAAAAAAAAA///wAAAAAAAf/////////gAAAAMAADAAMDAAAAAAAAAAAAAAAAAAAAAAAAAAf///gAAAAAAP/B///////gAAAAAABDgAOAAAAAAAAAAAAAAAAAAAAAAAAAAAf///wAAAAAACAA3//////AAAAAAAAxgA8AAAAAAAAAAAAAAAAAAAAAAAAAAAf///4AAAAAAAAAD/////+AAAAAAAAZgB8AAAAAAAAAAAAAAAAAAAAAAAAAAA////4AAAAAAAAAD/////8AAAAAAAAMwH8AAAAAAAAAAAAAAAAAAAAAAAAAAB////8AAAAAAAAAD/////4AAAAAAAAHQf8AAAAAAAAAAAAAAAAAAAAAAAAAAD////8AAAAAAAAAH/////gAAAAAAAAHwf88AAAAAAAAAAAAAAAAAAAAAAAAAD/////AAAAAAAAAH/////AAAAAAAAADwf8AAgAAAAAAAAAAAAAAAAAAAAAAAH/////4AAAAAAAAH/////AAAAAAAAAB4P5wBwAAAAAAAAAAAAAAAAAAAAAAAH/////+AAAAAAAAD////+AAAAAAAAAB8PxwAz4AAAAAAAAAAAAAAAAAAAAAAH//////4AAAAAAAB////8AAAAAAAAAA8AxQgf/AAAAAAAAAAAAAAAAAAAAAAH//////8AAAAAAAA////4AAAAAAAAAAcAAIAD/gIAAAAAAAAAAAAAAAAAAAAH///////gAAAAAAA////4AAAAAAAAAAMAAAAA/xwAAAAAAAAAAAAAAAAAAAAD///////gAAAAAAA////4AAAAAAAAAADgAAAI/8BAAAAAAAAAAAAAAAAAAAAD///////gAAAAAAAf///4AAAAAAAAAAB/AAAA/4AAAAAAAAAAAAAAAAAAAAAB///////gAAAAAAAf///4AAAAAAAAAAAAOhAAPMAAAAAAAAAAAAAAAAAAAAAA///////AAAAAAAAf///8AAAAAAAAAAAAACAAAHAAAAAAAAAAAAAAAAAAAAAA///////AAAAAAAAP///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf/////+AAAAAAAAP///+AAAAAAAAAAAAAAAgCAAAAAAAAAAAAAAAAAAAAAAAf/////8AAAAAAAAf///+AQAAAAAAAAAAAAB+CAAAAAAAAAAAAAAAAAAAAAAAP/////4AAAAAAAAf///+AwAAAAAAAAAAAAD8DAAAAAAAAAAAAAAAAAAAAAAAP/////4AAAAAAAA////+AwAAAAAAAAAAAB38DgAAAAAAAAAAAAAAAAAAAAAAH/////4AAAAAAAA////+DwAAAAAAAAAAAB/8HgAAAAAAAAAAAAAAAAAAAAAAB/////4AAAAAAAA////8PwAAAAAAAAAAAD//HwAAAAAAAAAAAAAAAAAAAAAAAf////4AAAAAAAA////wPwAAAAAAAAAAAP//3wAAAAAAAAAAAAAAAAAAAAAAAP////wAAAAAAAA////gPgAAAAAAAAAAAP///wAAAAAAAAAAAAAAAAAAAAAAAP////wAAAAAAAAf//+APgAAAAAAAAAAAf///4AAAAAAAAAAAAAAAAAAAAAAAP////wAAAAAAAAf//+APgAAAAAAAAAAD////+AAAAAAAAAAAAAAAAAAAAAAAP////gAAAAAAAAP//+APAAAAAAAAAAAf////+AAEAAAAAAAAAAAAAAAAAAAAP////AAAAAAAAAP///AfAAAAAAAAAAA//////gAAAAAAAAAAAAAAAAAAAAAAf///4AAAAAAAAAP//+APAAAAAAAAAAA//////gAAAAAAAAAAAAAAAAAAAAAAf///gAAAAAAAAAH//+AOAAAAAAAAAAB//////wAAAAAAAAAAAAAAAAAAAAAAf///AAAAAAAAAAH//4AEAAAAAAAAAAA//////4AAAAAAAAAAAAAAAAAAAAAAf//+AAAAAAAAAAH//4AAAAAAAAAAAAA//////4AAAAAAAAAAAAAAAAAAAAAAf///AAAAAAAAAAH//4AAAAAAAAAAAAA//////4AAAAAAAAAAAAAAAAAAAAAAf//+AAAAAAAAAAD//wAAAAAAAAAAAAA//////8AAAAAAAAAAAAAAAAAAAAAAf//8AAAAAAAAAAB//gAAAAAAAAAAAAAf/////4AAAAAAAAAAAAAAAAAAAAAA///8AAAAAAAAAAB//gAAAAAAAAAAAAAf/////4AAAAAAAAAAAAAAAAAAAAAA///wAAAAAAAAAAA//AAAAAAAAAAAAAAP/////4AAAAAAAAAAAAAAAAAAAAAA///wAAAAAAAAAAA/+AAAAAAAAAAAAAAP/AP//wAAAAAAAAAAAAAAAAAAAAAA///gAAAAAAAAAAA/4AAAAAAAAAAAAAAf8AG//gAAAAAAAAAAAAAAAAAAAAAA///AAAAAAAAAAAAYAAAAAAAAAAAAAAAOAAF//gAAAAAAAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf/AAABAAAAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAAgAAAAAAAAAAAAAAAAAD//4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAAQAAAAAAAAAAAAAAAAAD//wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABYAAAAcAAAAAAAAAAAAAAAAAB/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAD/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAD/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAADAAAAAAAAAAAAAAAAAAD/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAHAAAAAAAAAAAAAAAAAAB/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAOAAAAAAAAAAAAAAAAAAD/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAAH+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4AAAAAAAAAAAAAAAAAAH+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAH/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH8AAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH4AwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAAAAAAAAAAAAAAAAAAAAAAAAAAyQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/AAAAAAAAAAAAAAAAAAH4AAAAcB/+PgBj/AAAAAAAAAAAAAAAAAAAAAAAAAH/AAAAAAAAAAAAAAAAAD//gAAD//////////wAAAAAAAAAAAAAAAAAAAAAAAB+AAAAAAAAAAAAAAAAB////8A////////////uAAAAAAAAAAAAAAAAAAAAAAz+AAAAAAAAAAAAIAB/j/////z/////////////8AAAAAAAAAAAAAAAAAAAAH/+AAAAAAAAB////////////////////////////gAAAAAAAAAAAAAAAAAAAH//AAAAAAAA//////////////////////////////wAAAAAAAAAAAAAB/wABh//AAAAAAAf//////////////////////////////wAAAAAAAAABAAAB//+H///AAAAAAH///////////////////////////////gAAAAAAAAD///8A//////+AAAAAB///////////////////////////////4AAAAAAAD//////////////gAAAAH///////////////////////////////gAAAAAAA////////////////AAAA////////////////////////////////gAAAAAD/////////////////8AAP////////////////////////////////z8A//B/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////'); // land/sea, 1 bit per degree cell, 180 rows of 360
 
-const rad = d => d * Math.PI / 180;
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
 const vec = (lat, lon) => [Math.cos(rad(lat)) * Math.cos(rad(lon)), Math.cos(rad(lat)) * Math.sin(rad(lon)), Math.sin(rad(lat))];
+const latLon = ([x, y, z]) => [deg(Math.asin(z)), deg(Math.atan2(y, x))];
 
 const dots = [];                 // one dot per land cell, thinned towards the poles to keep density even
 for (let lat = -89.5; lat < 90; lat++) {
@@ -287,100 +309,229 @@ for (let lat = -89.5; lat < 90; lat++) {
 const U = [-Math.sin(rad(POLE[1])), Math.cos(rad(POLE[1])), 0];
 const V = [-Math.sin(rad(POLE[0])) * Math.cos(rad(POLE[1])), -Math.sin(rad(POLE[0])) * Math.sin(rad(POLE[1])), Math.cos(rad(POLE[0]))];
 const ringAt = t => U.map((u, i) => u * Math.cos(rad(t)) + V[i] * Math.sin(rad(t)));
+const zoomOn = (at, zoom = 3) => { const [lat, lon] = latLon(ringAt(at)); return { lat, lon, zoom }; };
 
+// ---------- Globe ----------
+const BLUE = '#2b7fff', PINK = '#ff3d8b', RING = '#ff9500';
+const RAMP = 8;                  // seconds a collision run takes on screen
+const TURNS = 180 + 360 * 10;    // degrees each beam travels in a run: it ends half a ring from the start
 const canvas = $('globe'), ctx = canvas.getContext('2d');
 const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-let view = { lat: 22, lon: -150 }, target = null, spin = !calm, drag = null;
-let beam = 40, launch = 0, last = 0;
+const dark = matchMedia('(prefers-color-scheme: dark)');
 
-function draw() {
+let view = { lat: 22, lon: -150, zoom: 1 };
+let rest = 22;                   // latitude the camera drifts back to
+let target = null;               // where the camera is flying: { lat, lon, zoom }
+let site = 0;                    // base chosen for the collision
+let run = null;                  // collision in progress: { start, tracks }
+let hot = -1, spots = [];        // base under the pointer, and where the bases are on screen
+let reading = -1;                // base whose text is on screen
+let drag = null, phase = 40, last = 0;
+
+function draw(now) {
   const size = Math.round(canvas.clientWidth * devicePixelRatio);
   if (canvas.width !== size) canvas.width = canvas.height = size;
-  const mid = size / 2, R = size * 0.45, px = size / 600;
+  const mid = size / 2, px = size / 600, R = size * 0.42 * view.zoom;
+  const ink = dark.matches ? '#f2f2f2' : '#111', paper = dark.matches ? '#000' : '#fff';
   const sl = Math.sin(rad(view.lon)), cl = Math.cos(rad(view.lon)), st = Math.sin(rad(view.lat)), ct = Math.cos(rad(view.lat));
   const project = ([x, y, z]) => {   // -> screen x, screen y, depth (positive = facing us)
     const toward = x * cl + y * sl;
     return [mid + R * (y * cl - x * sl), mid - R * (z * ct - toward * st), toward * ct + z * st];
   };
-  const arc = (from, to, color, width) => {
-    ctx.strokeStyle = color;
+  const circle = (x, y, r) => { ctx.beginPath(); ctx.arc(x, y, r, 0, 7); };
+  const arc = (from, to, width) => {
+    ctx.strokeStyle = RING;
     ctx.lineWidth = width * px;
     for (let t = from; t < to; t += 0.5) {
       const a = project(ringAt(t)), b = project(ringAt(Math.min(t + 0.5, to)));
-      ctx.globalAlpha = a[2] > 0 ? 1 : 0.25;   // the far side shows faintly through the planet
+      ctx.globalAlpha = a[2] > -0.02 ? 1 : 0.25;   // the far side shows faintly through the planet
       ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
     }
+    ctx.globalAlpha = 1;
+  };
+  const bunch = (angle, direction, color, stretch) => {   // a bright head and its fading tail
+    ctx.shadowColor = ctx.fillStyle = color;
+    ctx.shadowBlur = 14 * px;
+    for (let i = 40; i >= 0; i--) {
+      const [x, y, depth] = project(ringAt(angle - direction * i * stretch));
+      ctx.globalAlpha = (1 - i / 41) ** 2 * (depth > -0.02 ? 1 : 0.2);
+      circle(x, y, (i ? 2.2 : 4.5) * px); ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
   };
 
   ctx.clearRect(0, 0, size, size);
-  const sea = ctx.createRadialGradient(mid - R * 0.35, mid - R * 0.4, R * 0.1, mid, mid, R);
-  sea.addColorStop(0, '#14586c');
-  sea.addColorStop(1, '#082e3a');
-  ctx.fillStyle = sea;
-  ctx.beginPath(); ctx.arc(mid, mid, R, 0, 7); ctx.fill();
+  ctx.save();
+  circle(mid, mid, size * 0.49); ctx.clip();          // a porthole, so a zoomed globe stays round
 
-  ctx.fillStyle = '#d3eae1';
+  const sea = ctx.createRadialGradient(mid - R * 0.35, mid - R * 0.4, R * 0.1, mid, mid, R);
+  sea.addColorStop(0, dark.matches ? '#2e2e2e' : '#fafafa');
+  sea.addColorStop(1, dark.matches ? '#121212' : '#dcdcdc');
+  ctx.fillStyle = sea;
+  circle(mid, mid, R); ctx.fill();
+
+  ctx.fillStyle = ink;
   for (const dot of dots) {
     const [x, y, depth] = project(dot);
     if (depth > 0) { const s = R / 110 * (0.5 + depth); ctx.fillRect(x - s / 2, y - s / 2, s, s); }
   }
 
   ctx.lineCap = 'round';
-  arc(0, 360, '#f4c95d', 2);
-  for (const [, , spans] of CROSSINGS) for (const [a, b] of spans) arc(a, b, '#ff7a59', 5);
+  arc(0, 360, 1.5);
+  for (const [, , spans] of TUNNELS) for (const [a, b] of spans) arc(a, b, 5);
 
-  ctx.shadowColor = '#f4c95d';
-  ctx.shadowBlur = 14 * px;
-  for (let i = 40; i >= 0; i--) {              // the bunch and its fading tail
-    const [x, y, depth] = project(ringAt(beam - i * 0.7));
-    ctx.globalAlpha = (1 - i / 41) ** 2 * (depth > 0 ? 1 : 0.25);
-    ctx.fillStyle = i ? '#f4c95d' : '#fff';
-    ctx.beginPath(); ctx.arc(x, y, (i ? 2.2 : 4.5) * px, 0, 7); ctx.fill();
+  ctx.font = `600 ${Math.max(15 * px, 12 * devicePixelRatio)}px Archivo, system-ui, sans-serif`;
+  spots = BASES.map((base, i) => {
+    const [x, y, depth] = project(ringAt(base.at));
+    if (depth > -0.02) {
+      const chosen = i === hot || i === site;
+      ctx.fillStyle = chosen ? ink : paper;
+      ctx.strokeStyle = ink;
+      ctx.lineWidth = 2 * px;
+      circle(x, y, (chosen ? 8 : 6) * px); ctx.fill(); ctx.stroke();
+      ctx.textAlign = x > mid ? 'right' : 'left';
+      ctx.lineWidth = 4 * px;
+      ctx.strokeStyle = paper;
+      ctx.fillStyle = ink;
+      const tx = x + (x > mid ? -14 : 14) * px;
+      ctx.strokeText(base.name, tx, y + 5 * px); ctx.fillText(base.name, tx, y + 5 * px);
+    }
+    return [x / devicePixelRatio, y / devicePixelRatio, depth];
+  });
+
+  if (!run) {                    // idle: two bunches drifting round in opposite directions
+    bunch(phase, 1, BLUE, 0.7);
+    bunch(-phase, -1, PINK, 0.7);
+  } else if (!run.tracks) {      // spinning up: both leave the point opposite the base
+    const from = BASES[site].at + 180, stretch = 0.7 + run.rate * 0.002;
+    bunch(from + run.turn, 1, BLUE, stretch);
+    bunch(from - run.turn, -1, PINK, stretch);
+  } else {                       // collision: tracks curl away from the base, as in a detector
+    const t = (now - run.start) / 1000 - RAMP, [x0, y0] = project(ringAt(BASES[site].at));
+    const grow = 1 - (1 - Math.min(t / 0.7, 1)) ** 3, fade = Math.max(0, 1 - Math.max(0, t - 1) / 2.2);
+    ctx.globalAlpha = fade;
+    for (const track of run.tracks) {
+      let x = x0, y = y0;
+      ctx.strokeStyle = track.color || ink;
+      ctx.lineWidth = track.width * px;
+      ctx.beginPath(); ctx.moveTo(x, y);
+      for (let s = 0; s < track.length * grow; s += 4) {
+        x += 4 * px * Math.cos(track.angle + track.curl * s);
+        y += 4 * px * Math.sin(track.angle + track.curl * s);
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    if (t < 0.8) {               // shock ring
+      ctx.globalAlpha = 1 - t / 0.8;
+      ctx.strokeStyle = ink;
+      ctx.lineWidth = 1.5 * px;
+      circle(x0, y0, 250 * px * grow); ctx.stroke();
+    }
+    if (t < 0.4) {               // flash
+      ctx.globalAlpha = 1 - t / 0.4;
+      ctx.shadowColor = RING;
+      ctx.shadowBlur = 50 * px;
+      ctx.fillStyle = '#fff';
+      circle(x0, y0, 34 * px * (1 - t / 0.4)); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
   }
-  ctx.shadowBlur = 0;
-  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function collide(i) {
+  site = i;
+  run = { start: last, turn: 0, rate: 0 };            // same clock as the animation frames
+  $('status').textContent = `Spinning up two beams towards ${BASES[i].name}. Each lap on screen stands for many real ones.`;
 }
 
 function frame(now) {
-  const dt = Math.min((now - last) / 1000, 0.1);
+  const dt = Math.min((now - last) / 1000, 0.1), ease = Math.min(1, dt * 3.5);
   last = now;
-  if (spin) view.lon += 4 * dt;
-  if (target) {
-    const turn = ((target.lon - view.lon + 540) % 360) - 180;
-    view.lon += turn * Math.min(1, dt * 4);
-    view.lat += (target.lat - view.lat) * Math.min(1, dt * 4);
-    if (Math.abs(turn) < 0.1) target = null;
+  let goal = target;
+  if (run) {
+    const t = (now - run.start) / 1000, f = Math.min(t / RAMP, 1);
+    run.turn = TURNS * f ** 2.4;                       // laps get quicker and quicker on screen
+    run.rate = TURNS * 2.4 * f ** 1.4 / RAMP;
+    readout(m.laps * f ** 2.4);
+    // Watch the whole ring from above its axis, then dive to the base just before the beams meet.
+    goal = t < RAMP - 1.4 ? { lat: POLE[0], lon: POLE[1], zoom: 1 } : zoomOn(BASES[site].at);
+    if (f === 1 && !run.tracks) {
+      run.tracks = Array.from({ length: 70 }, () => ({
+        angle: Math.random() * 7, curl: (Math.random() - 0.5) * (Math.random() < 0.3 ? 0.12 : 0.02),
+        length: 50 + Math.random() * 170, width: 1 + Math.random() * 1.5,
+        color: [BLUE, PINK, RING, ''][Math.floor(Math.random() * 4)],   // '' = ink
+      }));
+      $('status').textContent = `Collision at ${BASES[site].name}: ${si(2 * m.top, 'eV')}.`;
+    }
+    if (t > RAMP + 3.4) { target = reading < 0 ? null : zoomOn(BASES[reading].at); run = null; }
+  } else if (!calm) phase += 45 * dt;
+
+  if (goal) {
+    view.lat += (goal.lat - view.lat) * ease;
+    view.lon += ((((goal.lon - view.lon) % 360) + 540) % 360 - 180) * ease;
+    view.zoom += (goal.zoom - view.zoom) * ease;
+  } else if (!drag) {
+    if (!calm) view.lon += 4 * dt;
+    view.lat += (rest - view.lat) * ease;
+    view.zoom += (1 - view.zoom) * ease;
   }
-  if (launch) {
-    const f = Math.min((now - launch) / 9000, 1);
-    readout(m.laps * f ** 3);
-    if (f === 1) { launch = 0; $('launch').textContent = 'Launch again'; }
-  }
-  if (launch || !calm) beam = (beam + dt * (launch ? 150 : 45)) % 360;
-  draw();
+  draw(now);
   requestAnimationFrame(frame);
 }
 
 // ---------- Controls ----------
-canvas.onpointerdown = e => { canvas.setPointerCapture(e.pointerId); drag = [e.clientX, e.clientY]; spin = false; target = null; };
 canvas.onpointermove = e => {
-  if (!drag) return;
-  view.lon -= (e.clientX - drag[0]) * 0.4;
-  view.lat = Math.max(-85, Math.min(85, view.lat + (e.clientY - drag[1]) * 0.4));
+  if (drag) {
+    view.lon -= (e.clientX - drag[0]) * 0.4 / view.zoom;
+    rest = view.lat = Math.max(-85, Math.min(85, view.lat + (e.clientY - drag[1]) * 0.4 / view.zoom));
+    drag = [e.clientX, e.clientY];
+    return;
+  }
+  const box = canvas.getBoundingClientRect();
+  hot = spots.findIndex(([x, y, depth]) => depth > -0.02 && Math.hypot(e.clientX - box.left - x, e.clientY - box.top - y) < 18);
+  canvas.style.cursor = hot < 0 ? 'grab' : 'pointer';
+};
+canvas.onpointerdown = e => {
+  canvas.onpointermove(e);       // touch has no hover, so look for a base under the finger first
+  if (hot >= 0) { site = hot; target = zoomOn(BASES[hot].at); return; }
+  canvas.setPointerCapture(e.pointerId);
   drag = [e.clientX, e.clientY];
+  target = null;
 };
 canvas.onpointerup = canvas.onpointercancel = () => drag = null;
+canvas.onpointerleave = () => hot = -1;
 
-$('lands').innerHTML = CROSSINGS.map(([name, length], i) => `<li><button data-i="${i}">${name} <b>${num(length)} km</b></button></li>`).join('');
+$('lands').innerHTML = TUNNELS.map(([name, length], i) => `<li><button data-i="${i}">${name} <b>${num(length)} km</b></button></li>`).join('');
 $('lands').onclick = e => {
   const button = e.target.closest('button');
-  if (!button) return;
-  const [a, b] = CROSSINGS[button.dataset.i][2][0], [x, y, z] = ringAt((a + b) / 2);
-  target = { lat: Math.asin(z) * 180 / Math.PI * 0.8, lon: Math.atan2(y, x) * 180 / Math.PI };
-  spin = false;
+  if (button) target = zoomOn(TUNNELS[button.dataset.i][2][0][0], 1.6);
 };
 
-$('launch').onclick = () => { launch = performance.now(); beam = 0; $('launch').textContent = 'Accelerating…'; };
+$('bases').innerHTML = BASES.map((base, i) => {
+  const [lat, lon] = latLon(ringAt(base.at));
+  const where = `${Math.abs(lat).toFixed(1)}° ${lat > 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(1)}° ${lon > 0 ? 'E' : 'W'}`;
+  return `<section class="base" data-i="${i}"><h3>${base.name}</h3><p class="where">${base.place}, ${where}</p><p>${base.text}</p><button class="go" data-i="${i}">Collide at ${base.name}</button></section>`;
+}).join('');
+$('bases').onclick = e => { if (e.target.tagName === 'BUTTON') collide(+e.target.dataset.i); };
+
+// Fly to a base when its text scrolls through a band of the window, or when the pointer enters it.
+const watcher = new IntersectionObserver(entries => {
+  for (const entry of entries) {
+    const i = +entry.target.dataset.i;
+    if (entry.isIntersecting) { site = reading = i; target = zoomOn(BASES[i].at); }
+    else if (reading === i) { reading = -1; target = null; }
+  }
+}, { rootMargin: '-55% 0px -35% 0px' });
+document.querySelectorAll('.base').forEach(section => {
+  watcher.observe(section);
+  section.onmouseenter = () => { site = +section.dataset.i; target = zoomOn(BASES[site].at); };
+});
+
+$('collide').onclick = () => collide(site);
 document.querySelectorAll('input').forEach(input => input.oninput = update);
 
 update();
